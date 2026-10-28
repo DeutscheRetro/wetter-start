@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wetter und Nachrichten</title>
+<style>
+  :root { --bg:#e6eff5; --card:#ffffff; --ink:#1b1b1b; --muted:#555; --accent:#0b5c8a; --line:#b4c9d8; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:22px/1.35 sans-serif; padding:16px; }
+  h1 { font-size:30px; margin:4px 0 12px; }
+  .card { background:var(--card); border:2px solid var(--line); border-radius:18px; padding:18px; margin-bottom:16px; }
+  .now { display:flex; align-items:center; gap:18px; }
+  .icon { font-size:84px; line-height:1; }
+  .temp { font-size:84px; font-weight:700; line-height:1; }
+  .desc { font-size:30px; font-weight:600; margin-top:4px; }
+  .meta { color:var(--muted); font-size:22px; margin-top:6px; }
+  .days { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-top:14px; }
+  .day { background:#f1f7fb; border:1px solid var(--line); border-radius:12px; padding:10px 4px; text-align:center; }
+  .day b { display:block; font-size:22px; }
+  .day .i { font-size:38px; }
+  .day .t { font-size:22px; font-weight:600; }
+  .day .r { font-size:18px; color:var(--muted); }
+  a.tile, button { display:block; width:100%; text-align:left; text-decoration:none; color:#fff; background:var(--accent);
+    border:0; border-radius:16px; padding:22px 20px; margin-bottom:12px; font:inherit; font-size:26px; font-weight:600; min-height:84px; }
+  a.tile small { display:block; font-weight:400; font-size:20px; opacity:.92; margin-top:2px; }
+  button { background:#cfe0ec; color:var(--ink); text-align:center; }
+  .err { color:#a40000; font-weight:600; }
+</style>
+</head>
+<body>
+<h1>Wetter und Nachrichten</h1>
+
+<div class="card" id="wetter">
+  <div class="meta">Wetter wird geladen ...</div>
+</div>
+<button id="neu">Wetter aktualisieren</button>
+
+<h1>Nachrichten</h1>
+<a class="tile" href="https://www.shz.de/lokales/itzehoe/">Itzehoe und Kreis Steinburg<small>Lokale Nachrichten (shz.de)</small></a>
+<a class="tile" href="https://www.ndr.de/nachrichten/schleswig-holstein/index.html">Schleswig-Holstein<small>Nachrichten vom NDR</small></a>
+<a class="tile" href="https://www.tagesschau.de/">Deutschland und die Welt<small>Tagesschau</small></a>
+<a class="tile" href="https://www.steinburg.de/">Kreis Steinburg<small>Mitteilungen der Kreisverwaltung</small></a>
+
+<script>
+// Ort ändern: Name, Breitengrad, Längengrad. Beispiel Itzehoe: 53.92, 9.51
+var ORT = "Hohenlockstedt", LAT = 53.97, LON = 9.58;
+
+var CODE = { 0:["☀️","Sonnig"],1:["🌤️","Überwiegend sonnig"],2:["⛅","Wolkig"],3:["☁️","Bedeckt"],
+  45:["🌫️","Nebel"],48:["🌫️","Nebel mit Reif"],51:["🌦️","Leichter Nieselregen"],53:["🌦️","Nieselregen"],55:["🌧️","Starker Nieselregen"],
+  56:["🌧️","Gefrierender Nieselregen"],57:["🌧️","Gefrierender Nieselregen"],61:["🌦️","Leichter Regen"],63:["🌧️","Regen"],65:["🌧️","Starker Regen"],
+  66:["🌧️","Gefrierender Regen"],67:["🌧️","Gefrierender Regen"],71:["❄️","Leichter Schneefall"],73:["❄️","Schneefall"],75:["❄️","Starker Schneefall"],
+  77:["❄️","Schneegriesel"],80:["🌦️","Regenschauer"],81:["🌧️","Regenschauer"],82:["🌧️","Starke Regenschauer"],85:["❄️","Schneeschauer"],86:["❄️","Schneeschauer"],
+  95:["⛈️","Gewitter"],96:["⛈️","Gewitter mit Hagel"],99:["⛈️","Gewitter mit Hagel"] };
+function info(c){ return CODE[c] || ["❓","Unbekannt"]; }
+function r(x){ return Math.round(x); }
+
+function laden(){
+  var box = document.getElementById("wetter");
+  box.innerHTML = '<div class="meta">Wetter wird geladen ...</div>';
+  var url = "https://api.open-meteo.com/v1/forecast?latitude="+LAT+"&longitude="+LON+
+    "&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m"+
+    "&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max"+
+    "&timezone=Europe%2FBerlin&forecast_days=5";
+  fetch(url).then(function(a){ if(!a.ok) throw 0; return a.json(); }).then(function(d){
+    var c = d.current, i = info(c.weather_code), t = d.daily;
+    var h = '<div class="now"><div class="icon">'+i[0]+'</div><div><div class="temp">'+r(c.temperature_2m)+' °C</div>'+
+      '<div class="desc">'+i[1]+'</div></div></div>'+
+      '<div class="meta">'+ORT+' · gefühlt '+r(c.apparent_temperature)+' °C · Wind '+r(c.wind_speed_10m)+' km/h</div>'+
+      '<div class="days">';
+    for (var k=0;k<t.time.length;k++){
+      var dt = new Date(t.time[k]+"T12:00:00");
+      var tag = k===0 ? "Heute" : ["So","Mo","Di","Mi","Do","Fr","Sa"][dt.getDay()];
+      h += '<div class="day"><b>'+tag+'</b><div class="i">'+info(t.weather_code[k])[0]+'</div>'+
+        '<div class="t">'+r(t.temperature_2m_max[k])+'° / '+r(t.temperature_2m_min[k])+'°</div>'+
+        '<div class="r">Regen '+(t.precipitation_probability_max[k]==null?'-':t.precipitation_probability_max[k]+' %')+'</div></div>';
+    }
+    var jetzt = new Date(); var m = (jetzt.getMinutes()<10?"0":"")+jetzt.getMinutes();
+    box.innerHTML = h + '</div><div class="meta">Stand: '+jetzt.getHours()+':'+m+' Uhr</div>';
+  }).catch(function(){
+    box.innerHTML = '<div class="err">Das Wetter konnte nicht geladen werden. Bitte WLAN prüfen und auf „Wetter aktualisieren“ tippen.</div>';
+  });
+}
+document.getElementById("neu").onclick = laden;
+laden();
+</script>
+</body>
+</html>
