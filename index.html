@@ -73,7 +73,7 @@ function laden(){
       var tag = k===0 ? "Heute" : ["So","Mo","Di","Mi","Do","Fr","Sa"][dt.getDay()];
       h += '<div class="day"><b>'+tag+'</b><div class="i">'+info(t.weather_code[k])[0]+'</div>'+
         '<div class="t">'+r(t.temperature_2m_max[k])+'° / '+r(t.temperature_2m_min[k])+'°</div>'+
-        '<div class="r">Regen '+(t.precipitation_probability_max[k]==null?'-':t.precipitation_probability_max[k]+' %')+'</div></div>';
+        '<div class="r">Regen<br>'+(t.precipitation_probability_max[k]==null?'-':t.precipitation_probability_max[k]+'&nbsp;%')+'</div></div>';
     }
     var jetzt = new Date(); var m = (jetzt.getMinutes()<10?"0":"")+jetzt.getMinutes();
     box.innerHTML = h + '</div><div class="meta">Stand: '+jetzt.getHours()+':'+m+' Uhr</div>';
